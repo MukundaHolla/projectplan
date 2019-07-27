@@ -1,25 +1,60 @@
 import React from 'react'
+import { connect } from 'react-redux';
+import { firestoreConnect } from 'react-redux-firebase';
+import { compose } from 'redux';
+import { Redirect } from "react-router-dom";
+import moment from 'moment'
 
 const ProjectDetails = (props) => {
-    const id = props.match.params.id;
-    return (
-        <div className="project-details continer section">
-            <div className="card z-depth-0">
-                <div className="card-content">
-                    <span className="card-title">Project Tittle - {id}</span>
-                    <p>its 6GB + 128GB variant costs Rs 23,999. The company will be conducting a second alpha sale for the Redmi K20 series on July 18th. Those who want to avoid the rush of a flash sale can wait for the first sale instead, which will be held at 12pm on July 22nd.</p>
-                </div>
-                <div className="card-action gret lighten-4 grey-text">
-                    <div>
-                        Posted by Namrata Bhat
+    const { project } = props;
+    const { auth } = props;
+    if(!auth.uid) return <Redirect to='/signin' />
+
+    if (project) {
+        return (
+            <div className="project-details container section">
+                <div className="card z-depth-0">
+                    <div className="card-content">
+                        <span className="card-title">Project Tittle - {project.title}</span>
+                        <p>{project.content}</p>
                     </div>
-                    <div>
-                        2nd Sep, 2 AM
+                    <div className="card-action gret lighten-4 grey-text">
+                        <div>
+                            Posted by {project.authorFirstName} {project.authorLastName}
+                        </div>
+                        <div>
+                        {moment(project.createdAt.toDate()).calendar()}
+                    </div>
                     </div>
                 </div>
             </div>
+        )
+
+    } else {
+        return (
+            <div className="container center">
+            <p>loading</p>
         </div>
-    )
+        )
+    }
+    
 }
 
-export default ProjectDetails
+const mapStateToProps = (state, ownProps) => {
+    //console.log(state)
+    const id = ownProps.match.params.id;
+    const projects = state.firestore.data.projects;
+    const project = projects ? projects[id] : null;
+
+    return {
+        project: project,
+        auth: state.firebase.auth
+    }
+}
+
+export default compose(
+    connect(mapStateToProps),
+    firestoreConnect([
+        { collection: 'projects' }
+    ])
+)(ProjectDetails)
